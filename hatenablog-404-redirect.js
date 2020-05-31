@@ -1,23 +1,32 @@
 //setting your environment
 const myEndpoint = 'https://--yourdomain--.microcms.io/api/v1/--yourcontents--';
 const myKey = '--your api key--';
-
 const doRedirect = true;
-redirectWhen404(myEndpoint,myKey, doRedirect);
+
+redirectWhen404(myEndpoint, myKey, doRedirect);
+///-----
 
 async function redirectWhen404(microCmsURL, microCmsKey, doRedirect){
 
     let pathName = window.location.pathname;
-    console.info('Hatena 404 checker, %s', pathName);
+    console.info('Hatenablog-redirect| pathName=%s', pathName);
 
-    if( !pathName.startsWith('/entry/') && !pathName.startsWith('/archive/category/') ){
-        console.log('This page is not supported this script.');
+    //previewは対象外
+    if( pathName == '/preview'){
+        console.log('Hatenablog-redirect| Preview page is not supported this script.');
         return;
     }
 
     let notFoundPage = isThisPage404();
-    console.log('404=>' + notFoundPage);
+    console.log('Hatenablog-redirect| 404=', notFoundPage);
     if( !notFoundPage ){
+        return;
+    }
+
+    //microCMSへの確認をするURLを選別
+    //apiの呼び出し回数が気にならなければ、条件なしでもよい。
+    if( !pathName.startsWith('/entry/') && !pathName.startsWith('/archive/category/') ){
+        console.log('Hatenablog-redirect| This page is not supported this script.');
         return;
     }
 
@@ -25,18 +34,24 @@ async function redirectWhen404(microCmsURL, microCmsKey, doRedirect){
     console.log(apiResult);
 
     if(!apiResult){
-        //microCMS returns 200
+        //microCMS does not return 200
 
     }else if(apiResult.totalCount !=1){
-        console.log('new Pathname is not found from api = %s', pathName);
-        //行先のない純粋な404のとき
+        console.log('Hatenablog-redirect| new Pathname is not found from api = %s', pathName);
+        //行先が定義されていないページ
         //カスタム404っぽくするために、DOMをいじるならここでどうぞ
 
     }else{
         let newPathName = apiResult.contents[0].newPathName;
-        console.info('* Redirect to %s', newPathName);
+        console.info('Hatenablog-redirect| * Redirect to %s', newPathName);
         if(doRedirect){
-            window.location.href=window.location.origin + newPathName;
+            //ここで転送
+            //http(s)から始まってるなら、そのまま転送してあげる
+            if( newPathName.startsWith('http://') || newPathName.startsWith('https://') ){
+                window.location.href = newPathName;
+            }else{
+                window.location.href = window.location.origin + newPathName;
+            }
         }
     }
 
